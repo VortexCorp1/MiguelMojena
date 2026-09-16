@@ -1946,6 +1946,17 @@ function initOS() {
     if (!force && Math.abs(p - lastCover) < .002) return;
     lastCover = p;
     sctx.clearRect(0, 0, seamW, seamH);
+    if (innerWidth < 1024 || TIER.coarsePointer) {
+      // phones / touch: the cell field reads as a glitch over the darkened hero — use a clean advancing edge instead
+      const h = seamH * clamp(p * 1.15, 0, 1), y = seamH - h;
+      sctx.fillStyle = "#e9ece8"; sctx.fillRect(0, y, seamW, h + 1);
+      if (p < .98) {
+        sctx.fillStyle = "rgba(8,10,12,.22)"; sctx.fillRect(0, y, seamW, 1);
+        sctx.fillStyle = "#b8ff2c"; for (let x = 12; x < seamW; x += 52) sctx.fillRect(x, y - 2, 3, 3);
+      }
+      sctx.fillStyle = "rgba(184,255,44,.6)"; sctx.fillRect(0, seamH - 1, seamW * clamp(p * 1.4, 0, 1), 1);
+      return;
+    }
     for (const c of seamCells) {
       if (p > c.th) {
         sctx.fillStyle = "#e9ece8"; sctx.fillRect(c.x, c.y, c.w + .5, c.h + .5);
