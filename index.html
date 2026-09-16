@@ -1903,6 +1903,11 @@ async function initHero(threePromise, imagesPromise) {
   hero.resize = resize;
   hero.enter = () => { build.to(1); hero.needsRender = true; };
   hero.setPaused = v => { scene.paused = v; };
+  let lastCoverAlpha = -1;
+  hero.setCover = p => { // phones: fade the portrait out during the first part of the cover
+    const a = innerWidth < 1024 ? 1 - clamp(p * 1.8, 0, 1) : 1;
+    if (Math.abs(a - lastCoverAlpha) > .005) { lastCoverAlpha = a; glCanvas.style.opacity = a.toFixed(3); }
+  };
   return hero;
 }
 
@@ -1946,17 +1951,6 @@ function initOS() {
     if (!force && Math.abs(p - lastCover) < .002) return;
     lastCover = p;
     sctx.clearRect(0, 0, seamW, seamH);
-    if (innerWidth < 1024 || TIER.coarsePointer) {
-      // phones / touch: the cell field reads as a glitch over the darkened hero — use a clean advancing edge instead
-      const h = seamH * clamp(p * 1.15, 0, 1), y = seamH - h;
-      sctx.fillStyle = "#e9ece8"; sctx.fillRect(0, y, seamW, h + 1);
-      if (p < .98) {
-        sctx.fillStyle = "rgba(8,10,12,.22)"; sctx.fillRect(0, y, seamW, 1);
-        sctx.fillStyle = "#b8ff2c"; for (let x = 12; x < seamW; x += 52) sctx.fillRect(x, y - 2, 3, 3);
-      }
-      sctx.fillStyle = "rgba(184,255,44,.6)"; sctx.fillRect(0, seamH - 1, seamW * clamp(p * 1.4, 0, 1), 1);
-      return;
-    }
     for (const c of seamCells) {
       if (p > c.th) {
         sctx.fillStyle = "#e9ece8"; sctx.fillRect(c.x, c.y, c.w + .5, c.h + .5);
@@ -2340,6 +2334,7 @@ function initScroll(hero, os, work, lab, term) {
     const pHero = clamp(1 - rOs.top / vh, 0, 1);
     cover(layers[0], pHero, desktop);
     hero.setPaused(layers[0].archived);
+    hero.setCover(pHero);
     os.setCover(pHero);
     os.update(vh);
     // masthead theme
@@ -2409,7 +2404,7 @@ function heroEntrance(hero, scroll) {
   const fontsPromise = (document.fonts && document.fonts.ready ? withTimeout(document.fonts.ready, 4000, "fonts") : Promise.resolve()).catch(() => {});
 
   let hero, os, work, lab, term, scroll;
-  try { hero = await initHero(threePromise, imagesPromise); } catch (e) { console.error("hero", e); hero = { setPaused() {}, enter() {}, resize() {} }; }
+  try { hero = await initHero(threePromise, imagesPromise); } catch (e) { console.error("hero", e); hero = { setPaused() {}, setCover() {}, enter() {}, resize() {} }; }
   try { os = initOS(); } catch (e) { console.error("os", e); os = { setCover() {}, setPaused() {}, resize() {}, update() {} }; }
   try { work = initWork(); } catch (e) { console.error("work", e); work = { update() {}, resize() {} }; }
   try { lab = initLab(); } catch (e) { console.error("lab", e); lab = { setPhase() {}, resize() {} }; }
